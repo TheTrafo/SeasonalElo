@@ -1,7 +1,6 @@
-package model;
+package org.training.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.time.LocalDate;
 
@@ -9,10 +8,13 @@ import java.time.LocalDate;
 public class Player {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true)
     private String username;
 
+    @Column(unique = true)
     private String email;
 
     private Integer eloRating = 1000;
@@ -25,6 +27,9 @@ public class Player {
         this.email = email;
         this.eloRating = eloRating;
         this.registeredAt = registeredAt;
+    }
+
+    public Player() {
     }
 
     public Long getId() {
