@@ -36,4 +36,8 @@ public class PlayerTeam {
     @Nullable
     private LocalDate leftAt;
 
+    public PlayerTeam(Player player, Team team) {
+        this.player = player;
+        this.team = team;
+    }
 }

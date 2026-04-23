@@ -1,10 +1,12 @@
 package org.training.mapper.impl;
 
+import org.springframework.stereotype.Component;
 import org.training.dto.team.TeamCreateRequest;
 import org.training.dto.team.TeamResponse;
 import org.training.mapper.TeamMapper;
 import org.training.model.Team;
 
+@Component
 public class TeamMapperImpl implements TeamMapper {
 
     @Override
