@@ -9,6 +9,7 @@ import org.training.model.Season;
 import org.training.repository.SeasonRepository;
 import org.training.service.SeasonService;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -25,8 +26,14 @@ public class SeasonServiceImpl implements SeasonService {
 
     @Override
     public SeasonResponse createSeason(SeasonCreateRequest seasonCreateRequest) {
-        Season season = seasonRepository.save(seasonMapper.mapToSeason(seasonCreateRequest));
-        return seasonMapper.mapToSeasonResponse(season);
+        Season season = seasonMapper.mapToSeason(seasonCreateRequest);
+        boolean active = seasonRepository.findByActiveIsTrue().isPresent();
+        if (seasonCreateRequest.getStartDate().isBefore(LocalDate.now()) &&
+                seasonCreateRequest.getEndDate().isAfter(LocalDate.now()) && !active) {
+            season.setActive(true);
+        }
+        Season saved = seasonRepository.save(season);
+        return seasonMapper.mapToSeasonResponse(saved);
     }
 
     @Override
