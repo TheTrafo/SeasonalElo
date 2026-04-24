@@ -6,6 +6,8 @@ import org.training.dto.season.SeasonResponse;
 import org.training.mapper.SeasonMapper;
 import org.training.model.Season;
 
+import java.util.List;
+
 @Component
 public class SeasonMapperImpl implements SeasonMapper {
 
@@ -28,4 +30,12 @@ public class SeasonMapperImpl implements SeasonMapper {
                 season.getActive()
         );
     }
+
+    @Override
+    public List<SeasonResponse> mapToSeasonListResponse(List<Season> seasons) {
+        return seasons.stream()
+                .map(this::mapToSeasonResponse)
+                .toList();
+    }
+
 }

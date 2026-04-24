@@ -1,9 +1,12 @@
 package org.training.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.training.dto.player.PlayerCreateRequest;
 import org.training.dto.player.PlayerResponse;
 import org.training.dto.player.PlayerUpdateRequest;
+import org.training.service.PlayerService;
 
 import java.util.List;
 
@@ -11,29 +14,37 @@ import java.util.List;
 @RequestMapping("/players")
 public class PlayerController {
 
-    // TODO: integrate after implementing service layer
+    private final PlayerService playerService;
+
+    public PlayerController(PlayerService playerService) {
+        this.playerService = playerService;
+    }
 
     @PostMapping
-    PlayerResponse newPlayer(@RequestBody PlayerCreateRequest newPlayer) {
-        return null;
+    ResponseEntity<PlayerResponse> createPlayer(@RequestBody PlayerCreateRequest newPlayer) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(playerService.createPlayer(newPlayer));
     }
 
     @GetMapping
-    List<PlayerResponse> allPlayers() {
-        return null;
+    ResponseEntity<List<PlayerResponse>> allPlayers() {
+        return ResponseEntity.ok(playerService.getAllPlayers());
     }
 
     @GetMapping("/{id}")
-    PlayerResponse playerById(@PathVariable Long id) {
-        return null;
+    ResponseEntity<PlayerResponse> playerById(@PathVariable Long id) {
+        return ResponseEntity.ok(playerService.getPlayerById(id));
     }
 
     @PutMapping("/{id}")
-    PlayerResponse updatePlayer(@PathVariable Long id, @RequestBody PlayerUpdateRequest updatedPlayer) {
-        return null;
+    ResponseEntity<PlayerResponse> updatePlayer(@PathVariable Long id, @RequestBody PlayerUpdateRequest updatedPlayer) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(playerService.updatePlayer(id, updatedPlayer));
     }
 
     @DeleteMapping("/{id}")
-    void deletePlayer(@PathVariable Long id) {
+    ResponseEntity<Void> deletePlayer(@PathVariable Long id) {
+        playerService.deletePlayer(id);
+        return ResponseEntity.noContent().build();
     }
 }

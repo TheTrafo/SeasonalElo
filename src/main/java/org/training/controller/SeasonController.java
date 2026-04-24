@@ -1,10 +1,13 @@
 package org.training.controller;
 
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.training.dto.season.SeasonCreateRequest;
 import org.training.dto.season.SeasonResponse;
 import org.training.dto.season.SeasonUpdateRequest;
+import org.training.service.SeasonService;
 
 import java.util.List;
 
@@ -12,30 +15,37 @@ import java.util.List;
 @RequestMapping("/seasons")
 public class SeasonController {
 
-    //TODO: integrate after implementing service layer
+    private final SeasonService seasonService;
+
+    public SeasonController(SeasonService seasonService) {
+        this.seasonService = seasonService;
+    }
 
     @PostMapping
-    SeasonResponse newSeason(@RequestBody SeasonCreateRequest newSeason) {
-        return null;
+    ResponseEntity<SeasonResponse> createSeason(@RequestBody SeasonCreateRequest newSeason) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(seasonService.createSeason(newSeason));
     }
 
     @GetMapping
-    List<SeasonResponse> allSeasons() {
-        return null;
+    ResponseEntity<List<SeasonResponse>> allSeasons() {
+        return ResponseEntity.ok(seasonService.getAllSeasons());
     }
 
     @GetMapping("/{id}")
-    SeasonResponse seasonById(@PathVariable Long id) {
-        return null;
+    ResponseEntity<SeasonResponse> seasonById(@PathVariable Long id) {
+        return ResponseEntity.ok(seasonService.getSeasonById(id));
     }
 
     @PutMapping("/{id}")
-    SeasonResponse updateSeason(@PathVariable Long id, @RequestBody SeasonUpdateRequest editedSeason) {
-        return null;
+    ResponseEntity<SeasonResponse> updateSeason(@PathVariable Long id, @RequestBody SeasonUpdateRequest editedSeason) {
+        return ResponseEntity.ok(seasonService.updateSeason(id, editedSeason));
     }
 
     @DeleteMapping("/{id}")
-    void deleteSeason(@PathVariable Long id) {
+    ResponseEntity<Void> deleteSeason(@PathVariable Long id) {
+        seasonService.deleteSeason(id);
+        return ResponseEntity.noContent().build();
     }
 
 }

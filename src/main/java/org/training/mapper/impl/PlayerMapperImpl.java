@@ -6,6 +6,8 @@ import org.training.dto.player.PlayerResponse;
 import org.training.mapper.PlayerMapper;
 import org.training.model.Player;
 
+import java.util.List;
+
 @Component
 public class PlayerMapperImpl implements PlayerMapper {
 
@@ -26,5 +28,12 @@ public class PlayerMapperImpl implements PlayerMapper {
                 player.getEloRating(),
                 player.getRegisteredAt()
         );
+    }
+
+    @Override
+    public List<PlayerResponse> mapToPlayerListResponse(List<Player> players) {
+        return players.stream()
+                .map(this::mapToPlayerResponse)
+                .toList();
     }
 }

@@ -6,6 +6,8 @@ import org.training.dto.team.TeamResponse;
 import org.training.mapper.TeamMapper;
 import org.training.model.Team;
 
+import java.util.List;
+
 @Component
 public class TeamMapperImpl implements TeamMapper {
 
@@ -26,4 +28,12 @@ public class TeamMapperImpl implements TeamMapper {
                 team.getFoundedAt()
         );
     }
+
+    @Override
+    public List<TeamResponse> mapToTeamListResponse(List<Team> teams) {
+        return teams.stream()
+                .map(this::mapToTeamResponse)
+                .toList();
+    }
+
 }

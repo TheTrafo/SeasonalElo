@@ -17,6 +17,4 @@ public class MatchCreateRequest {
 
     private LocalDate playedAt;
 
-    private Long seasonId;
-
 }
