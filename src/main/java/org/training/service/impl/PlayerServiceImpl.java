@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import org.training.dto.player.PlayerCreateRequest;
 import org.training.dto.player.PlayerResponse;
 import org.training.dto.player.PlayerUpdateRequest;
+import org.training.exception.PlayerNotFoundException;
 import org.training.mapper.PlayerMapper;
 import org.training.model.Player;
 import org.training.repository.PlayerRepository;
@@ -37,13 +38,15 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     public PlayerResponse getPlayerById(Long playerId) {
-        Player player = playerRepository.findById(playerId).orElseThrow();
+        Player player = playerRepository.findById(playerId).orElseThrow(()
+                -> new PlayerNotFoundException("Hráč nebyl nalezen"));
         return playerMapper.mapToPlayerResponse(player);
     }
 
     @Override
     public PlayerResponse updatePlayer(Long id, PlayerUpdateRequest playerUpdateRequest) {
-        Player playerToUpdate = playerRepository.findById(id).orElseThrow();
+        Player playerToUpdate = playerRepository.findById(id).orElseThrow(()
+                -> new PlayerNotFoundException("Hráč nebyl nalezen"));
         playerToUpdate.setUsername(playerUpdateRequest.getUsername());
         playerToUpdate.setEmail(playerUpdateRequest.getEmail());
         Player saved = playerRepository.save(playerToUpdate);
@@ -52,7 +55,8 @@ public class PlayerServiceImpl implements PlayerService {
 
     @Override
     public void deletePlayer(Long id) {
-        Player player = playerRepository.findById(id).orElseThrow();
+        Player player = playerRepository.findById(id).orElseThrow(()
+                -> new PlayerNotFoundException("Hráč nebyl nalezen"));
         playerRepository.delete(player);
     }
 }

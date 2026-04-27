@@ -1,5 +1,6 @@
 package org.training.mapper.impl;
 
+import org.springframework.stereotype.Component;
 import org.training.dto.match.MatchCreateRequest;
 import org.training.dto.match.MatchResponse;
 import org.training.mapper.MatchMapper;
@@ -8,6 +9,7 @@ import org.training.mapper.SeasonMapper;
 import org.training.model.Match;
 import org.training.model.Player;
 
+@Component
 public class MatchMapperImpl implements MatchMapper {
 
     private final PlayerMapper playerMapper;

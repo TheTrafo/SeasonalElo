@@ -3,6 +3,7 @@ package org.training.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.training.dto.match.MatchCreateRequest;
@@ -20,7 +21,7 @@ public class MatchController {
     }
 
     @PostMapping
-    ResponseEntity<MatchResponse> matchRecord(MatchCreateRequest matchCreateRequest) {
+    ResponseEntity<MatchResponse> matchRecord(@RequestBody MatchCreateRequest matchCreateRequest) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(matchService.createMatch(matchCreateRequest));
     }

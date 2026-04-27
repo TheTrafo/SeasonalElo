@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import org.training.dto.season.SeasonCreateRequest;
 import org.training.dto.season.SeasonResponse;
 import org.training.dto.season.SeasonUpdateRequest;
+import org.training.exception.SeasonNotFoundException;
 import org.training.mapper.SeasonMapper;
 import org.training.model.Season;
 import org.training.repository.SeasonRepository;
@@ -28,8 +29,8 @@ public class SeasonServiceImpl implements SeasonService {
     public SeasonResponse createSeason(SeasonCreateRequest seasonCreateRequest) {
         Season season = seasonMapper.mapToSeason(seasonCreateRequest);
         boolean active = seasonRepository.findByActiveIsTrue().isPresent();
-        if (seasonCreateRequest.getStartDate().isBefore(LocalDate.now()) &&
-                seasonCreateRequest.getEndDate().isAfter(LocalDate.now()) && !active) {
+        if (!season.getStartDate().isAfter(LocalDate.now()) &&
+                !season.getEndDate().isBefore(LocalDate.now()) && !active) {
             season.setActive(true);
         }
         Season saved = seasonRepository.save(season);
@@ -44,13 +45,15 @@ public class SeasonServiceImpl implements SeasonService {
 
     @Override
     public SeasonResponse getSeasonById(Long seasonId) {
-        Season season = seasonRepository.findById(seasonId).orElseThrow();
+        Season season = seasonRepository.findById(seasonId).orElseThrow(()
+                -> new SeasonNotFoundException("Sezóna nebyla nalezena"));
         return seasonMapper.mapToSeasonResponse(season);
     }
 
     @Override
     public SeasonResponse updateSeason(Long id, SeasonUpdateRequest seasonUpdateRequest) {
-        Season seasonToUpdate = seasonRepository.findById(id).orElseThrow();
+        Season seasonToUpdate = seasonRepository.findById(id).orElseThrow(()
+                -> new SeasonNotFoundException("Sezóna nebyla nalezena"));
         seasonToUpdate.setName(seasonUpdateRequest.getName());
         seasonToUpdate.setStartDate(seasonUpdateRequest.getStartDate());
         seasonToUpdate.setEndDate(seasonUpdateRequest.getEndDate());
@@ -60,7 +63,8 @@ public class SeasonServiceImpl implements SeasonService {
 
     @Override
     public void deleteSeason(Long id) {
-        Season season = seasonRepository.findById(id).orElseThrow();
+        Season season = seasonRepository.findById(id).orElseThrow(()
+                -> new SeasonNotFoundException("Sezóna nebyla nalezena"));
         seasonRepository.delete(season);
     }
 }

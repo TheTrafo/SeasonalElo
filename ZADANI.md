@@ -5,100 +5,152 @@
 Trenovaci projekt pro pripravu na pohovory. Cil: napsat kompletni Spring Boot REST API
 od nuly, bez pomoci AI (pouze konzultace konceptu).
 
-Tech stack: Java 21, Spring Boot, Spring Data JPA, Hibernate, H2 databaze.
+Tech stack: Java 21, Spring Boot, Spring Data JPA, Hibernate, H2 databaze, Lombok.
 
 ---
 
-## Aktualni stav: Faze 1 hotova, Faze 2 nezacata
+## Aktualni stav: Faze 2 hotova, Faze 3 ~70 %
 
-### Co je hotovo (Faze 1)
+Posledni review: 2026-04-27 (vecer). Vsechny dosud zname bugy opraveny, ELO logika je
+zero-sum (pure `calculateRating`, ratingy zachycene pred kalkulaci), exception handling
+je kompletni a sedi HTTP statusy. `createMatch` je `@Transactional`. Zbyva leaderboard
+logika a sprava sezon.
+
+### Kde pokracovat zitra
+
+1. **Leaderboard** — zacni implementaci `LeaderboardService.getLeaderboard(Long seasonId)`:
+   - Pridat dotaz do `MatchRepository` (napr. `findBySeasonId(Long seasonId)`)
+   - Spocitat statistiky per-hrac z listu zapasu — totalMatches, wins, losses, draws
+     (vyhodnoceni vysledku stejne jako v `MatchServiceImpl` pres `Long.compare`)
+   - Seradit `List<PlayerLeaderboardResponse>` podle `eloRating DESC`
+     (`stream().sorted(Comparator.comparingDouble(PlayerLeaderboardResponse::getEloRating).reversed()).toList()`)
+   - Doplnit `LeaderboardController.getLeaderboard` (ted vraci `null`)
+   - Pri nenalezene sezone hodit `SeasonNotFoundException` (uz mas)
+
+2. **`POST /seasons/{id}/activate`** — aktivuje sezonu, deaktivuje vsechny ostatni,
+   resetuje ELO vsech hracu na 1000. Anotuj `@Transactional` — atomicita je tu klicova
+   (bud se zmeni vsechno, nebo nic).
+
+3. **Polish** — pred Fazi 4 zvaz drobnosti z "Polish" sekce nize, hlavne switch
+   expression v `MatchServiceImpl.calculateRating`.
+
+---
+
+### Faze 1 — hotovo
 
 - [x] Spring Boot projekt s pom.xml, parent, zavislosti
 - [x] `application.yml` s H2 konfiguraci
 - [x] `Main.java` s `@SpringBootApplication`
-- [x] Entity `Player` a `Season` s JPA anotacemi (`@GeneratedValue`, `@Column(unique=true)`, no-arg konstruktory)
+- [x] Entity `Player` a `Season` s JPA anotacemi
 - [x] Repository vrstva (`PlayerRepository`, `SeasonRepository`)
-- [x] REST controllery s CRUD endpointy (`/players`, `/seasons`)
-- [x] DTO tridy vytvoreny (Create, Update, Return pro Player i Season) — ale ZATIM NEJSOU ZAPOJENE do controlleru
-- [x] Prazdne entity `Team`, `Match`, `PlayerTeamMembership` pripraveny jako shell
+- [x] REST controllery s CRUD endpointy
 
-### Drobne veci k oprave (pred nebo behem faze 2)
+### Faze 2 — hotovo
 
-- `ReturnPlayerDTO` a `ReturnSeasonDTO` nemaji `id` field — pridat
-- `ReturnPlayerDTO` nema `registeredAt` — pridat, a nastavovat automaticky pri vytvoreni hrace
-- Nepouzite importy v `SeasonController` (Optional) a `ReturnPlayerDTO` (LocalDate)
-- Controllery porad prijimaji a vraci entity primo — prepnout na DTOs je hlavni ukol faze 2
+**Entity (`@CreationTimestamp` kde davalo smysl):**
+- [x] `Team` — id, name, abbreviation (max 5), foundedAt
+- [x] `Match` — `@ManyToOne` na playerHome, playerAway, season; scoreHome/Away (Long), playedAt
+- [x] `PlayerTeam` — `@ManyToOne` na player+team, joinedAt, `@Nullable leftAt`
 
----
+**DTO vrstva:**
+- [x] Request/Response DTOs pro vsechny entity, controllery vraceji jen DTOs
 
-## Faze 2 — Vztahy a DTOs
+**Mapper vrstva (nad ramec puvodniho zadani):**
+- [x] Interface + Impl pro Player, Season, Team, PlayerTeam, Match
 
-### Nove entity
+**Service vrstva (nad ramec puvodniho zadani):**
+- [x] Interface + Impl pro Player, Season, Team, PlayerTeam, Match
 
-**Team**
-- `id`, `name`, `abbreviation` (max 5 znaku), `foundedAt`
+**Endpointy (Team a clenstvi):**
+- [x] `POST /teams`
+- [x] `POST /teams/{teamId}/members` — kontroluje, ze hrac neni v jinem aktivnim tymu (`PlayerAlreadyInTeamException`)
+- [x] `DELETE /teams/{teamId}/members/{playerId}` — soft delete (`leftAt = LocalDate.now()`)
+- [x] `GET /teams/{teamId}/members` — aktivni clenove (filtrovano `leftAt IS NULL`)
 
-**Match**
-- `id`, `playerHome` (ManyToOne Player), `playerAway` (ManyToOne Player), `scoreHome`, `scoreAway`, `playedAt`, `season` (ManyToOne Season)
+**Specialni dotazy:**
+- [x] `PlayerTeamRepository`: `findByTeamIdAndLeftAtIsNull`, `findByPlayerIdAndLeftAtIsNull`, `findByPlayerIdAndTeamIdAndLeftAtIsNull`
+- [x] `SeasonRepository.findByActiveIsTrue`
 
-**PlayerTeamMembership** (join tabulka s extra daty)
-- `id`, `player` (ManyToOne Player), `team` (ManyToOne Team), `joinedAt`, `leftAt` (nullable — null = stale aktivni)
-
-### JPA vztahy
-
-- `Match` → `@ManyToOne` na `Player` (home/away) a `Season`
-- `PlayerTeamMembership` → `@ManyToOne` na `Player` i `Team`
-
-### DTO vrstva
-
-- Entity nikdy nevracet primo v REST response
-- Vytvorit request/response DTOs a mapovani mezi nimi
-- Zapojit existujici DTOs do `PlayerController` a `SeasonController`
-- Vytvorit DTOs pro nove entity
-
-### Endpointy
-
-- `POST /api/teams` — vytvoreni tymu
-- `POST /api/teams/{teamId}/members` — pridani hrace do tymu
-- `DELETE /api/teams/{teamId}/members/{playerId}` — odebrani (nastavi `leftAt`)
-- `GET /api/teams/{teamId}/members` — aktualni clenove
+**Sezony — auto-aktivace pri vytvoreni:**
+- [x] `SeasonServiceImpl.createSeason` automaticky nastavi `active = true`, pokud zadna aktivni neexistuje a datumy obklopuji dnesek (`!startDate.isAfter(today) && !endDate.isBefore(today)` — inkluzivni)
 
 ---
 
-## Faze 3 — Business logika
+## Faze 3 — Business logika (rozpracovana, ~70 %)
 
-### Zaznam zapasu — `POST /api/matches`
+### Co je hotovo
 
-- Validace: hrac nemuze hrat sam proti sobe, oba hraci musi existovat, sezona musi byt aktivni
-- Po ulozeni zapasu automaticky prepocitej ELO obou hracu
+**ELO vypocet:**
+- [x] `MatchResult` enum (`WIN`, `LOSS`, `DRAW`)
+- [x] `MatchServiceImpl.calculateRating` — **pure funkce**: bere `Double playerRating, Double opponentRating, MatchResult`, vraci novy rating
+- [x] **Zero-sum**: `createMatch` zachytava oba puvodni ratingy do lokalnich promennych pred kalkulaci, oba hraci pouzivaji pre-match hodnoty (oprava puvodniho bugu, kde druhy vypocet bral uz updatovany rating prvniho hrace)
+- [x] `K = 32`, `S = {1, 0.5, 0}` podle vzorce v zadani
 
-### ELO vypocet (implementovat v service vrstve)
+**Match endpoint (`POST /matches`):**
+- [x] Validace v poradi: same-player check (fail-fast bez DB) → load hracu (`PlayerNotFoundException`) → load aktivni sezony (`SeasonNotActiveException`) → kalkulace → save
+- [x] `@Transactional` zarucuje atomicitu (vsechny zmeny commitnou spolecne, nebo nic)
+- [x] Match vyrobeny pres `MatchMapper`, pripojena aktivni sezona
 
-```
-Ocekavana pravdepodobnost:  E_a = 1 / (1 + 10^((R_b - R_a) / 400))
-Novy rating:                R_a' = R_a + K * (S_a - E_a)
-K = 32, S_a = 1 (vyhra), 0.5 (remiza), 0 (prohra)
-```
+**Vlastni vyjimky:**
+- [x] `SamePlayerException`, `SeasonNotActiveException`
+- [x] `PlayerAlreadyInTeamException`, `PlayerNotPartOfTeamException`
+- [x] `PlayerNotFoundException`, `SeasonNotFoundException`, `TeamNotFoundException` (zapojeno ve vsech `findById().orElseThrow(...)` volanich)
 
-### Zebricek — `GET /api/leaderboard?seasonId=X`
+**`GlobalExceptionHandler` — kompletni:**
+- [x] `SamePlayerException` → HTTP 400
+- [x] `PlayerAlreadyInTeamException`, `PlayerNotPartOfTeamException`, `SeasonNotActiveException` → HTTP 409
+- [x] `PlayerNotFoundException`, `SeasonNotFoundException`, `TeamNotFoundException` → HTTP 404
 
-- Hrace serazene podle ELO
-- Statistika: pocet zapasu, vyher, proher, remiz
+**Leaderboard — pouze kostra:**
+- [x] `LeaderboardController` se signaturou `GET /leaderboard?seasonId=X` (vraci `null`)
+- [x] DTO `LeaderboardResponse` (Season + List<PlayerLeaderboardResponse>) s `@Data @NoArgsConstructor`
+- [x] DTO `PlayerLeaderboardResponse` (totalMatches, wins, losses, draws) s `@Data @NoArgsConstructor`
+- [x] `LeaderboardService` interface + `LeaderboardServiceImpl` (`@Service`, ale zatim prazdne)
 
-### Sprava sezon
+### Co zbyva dodelat
 
-- `POST /api/seasons/{id}/activate` — aktivuje sezonu (deaktivuje vsechny ostatni)
-- Pri startu nove sezony se ELO vsech hracu resetuje na 1000
+**Leaderboard — dokoncit logiku** (viz "Kde pokracovat zitra" vyse pro detaily)
+
+**Sprava sezon:**
+- [ ] `POST /seasons/{id}/activate` — aktivuje sezonu, deaktivuje vsechny ostatni (`@Transactional`)
+- [ ] Pri aktivaci nove sezony se ELO vsech hracu resetuje na 1000 (v ramci stejne transakce)
+
+---
+
+## Polish (volitelne pred Fazi 4)
+
+Drobnosti, ktere nejsou bugy, ale stoji za pozornost az budes mit cas:
+
+- **`MatchServiceImpl.createMatch`** — explicitni `playerRepository.save(playerHome/Away)`
+  jsou redundantni. Metoda je `@Transactional`, takze dirty checking flushne zmeny
+  `setEloRating` automaticky pri commitu. `matchRepository.save(match)` ale potreba je
+  (novy entity, dosud detached).
+- **`MatchServiceImpl.calculateRating`** — reassignment parametru `playerRating` v
+  `switch`. Cistsi je switch expression (Java 14+):
+
+  ```java
+  double s = switch (result) {
+      case WIN -> 1.0;
+      case DRAW -> 0.5;
+      case LOSS -> 0.0;
+  };
+  return playerRating + 32.0 * (s - likelihoodOfWin);
+  ```
+
+- **`MatchServiceImpl.calculateRating`** — boxed `Double` v privatni vypocetni metode
+  by mohl byt primitive `double` (mensi alokace, zadne unboxing NPE).
+- **Endpointy** zatim bez `/api/` prefixu (puvodne se s nim pocitalo) — ve Fazi 4 zvazit sjednoceni.
 
 ---
 
 ## Faze 4 — Production-ready veci
 
 1. **Validace** — Bean Validation (`@Valid`, `@NotBlank`, `@Email`, `@Size`, custom validatory)
-2. **Error handling** — `@ControllerAdvice` s vlastnimi vyjimkami (`PlayerNotFoundException`, `InvalidMatchException`, `SeasonNotActiveException`), konzistentni error response format
-3. **Strankovani a razeni** — `GET /api/players?page=0&size=10&sort=eloRating,desc`
-4. **Filtrovani** — `GET /api/matches?seasonId=1&playerId=5`
-5. **Auditing** — `@CreatedDate`, `@LastModifiedDate` na entitach
+2. **Error handling** — sjednoceny error response format (napr. `{timestamp, status, message, path}`), pokryti vsech vyjimek
+3. **Strankovani a razeni** — `GET /players?page=0&size=10&sort=eloRating,desc` (Pageable)
+4. **Filtrovani** — `GET /matches?seasonId=1&playerId=5`
+5. **Auditing** — `@CreatedDate`, `@LastModifiedDate`, `@EntityListeners(AuditingEntityListener.class)`
+6. **Testy** — unit testy pro service vrstvu (Mockito), integracni testy controlleru (`@SpringBootTest`, `MockMvc`)
 
 ---
 

@@ -5,7 +5,9 @@ import org.training.dto.player.PlayerResponse;
 import org.training.dto.playerTeamMembership.AddMemberRequest;
 import org.training.dto.playerTeamMembership.PlayerTeamResponse;
 import org.training.exception.PlayerAlreadyInTeamException;
+import org.training.exception.PlayerNotFoundException;
 import org.training.exception.PlayerNotPartOfTeamException;
+import org.training.exception.TeamNotFoundException;
 import org.training.mapper.PlayerMapper;
 import org.training.mapper.PlayerTeamMapper;
 import org.training.model.Player;
@@ -40,14 +42,16 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
 
     @Override
     public PlayerTeamResponse addPlayerToTeam(Long teamId, AddMemberRequest addMemberRequest) {
-        Team team = teamRepository.findById(teamId).orElseThrow();
-        Player player = playerRepository.findById(addMemberRequest.getPlayerId()).orElseThrow();
+        Team team = teamRepository.findById(teamId).orElseThrow(()
+                -> new TeamNotFoundException("Tým nebyl nalezen"));
+        Player player = playerRepository.findById(addMemberRequest.getPlayerId()).orElseThrow(()
+                -> new PlayerNotFoundException("Hráč nebyl nalezen"));
         if (playerTeamRepository.findByPlayerIdAndLeftAtIsNull(player.getId()).isEmpty()) {
             PlayerTeam playerTeam = new PlayerTeam(player, team);
             PlayerTeam saved = playerTeamRepository.save(playerTeam);
             return playerTeamMapper.toPlayerTeamResponse(saved);
         } else {
-            throw new PlayerAlreadyInTeamException("Player already in team");
+            throw new PlayerAlreadyInTeamException("Hráč už je v týmu");
         }
     }
 
@@ -60,7 +64,7 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
             playerTeamRepository.save(playerTeam);
             return playerTeamMapper.toPlayerTeamResponse(playerTeam);
         } else {
-            throw new PlayerNotPartOfTeamException("Player was not in the selected team");
+            throw new PlayerNotPartOfTeamException("Hráč nebyl ve vybraném týmu");
         }
     }
 

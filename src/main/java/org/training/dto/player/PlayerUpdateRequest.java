@@ -9,6 +9,6 @@ public class PlayerUpdateRequest {
 
     private String email;
 
-    private Integer eloRating;
+    private Double eloRating;
 
 }

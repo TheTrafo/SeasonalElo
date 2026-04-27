@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import org.training.dto.team.TeamCreateRequest;
 import org.training.dto.team.TeamResponse;
 import org.training.dto.team.TeamUpdateRequest;
+import org.training.exception.TeamNotFoundException;
 import org.training.mapper.TeamMapper;
 import org.training.model.Team;
 import org.training.repository.TeamRepository;
@@ -37,13 +38,15 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public TeamResponse getTeamById(Long teamId) {
-        Team team = teamRepository.findById(teamId).orElseThrow();
+        Team team = teamRepository.findById(teamId).orElseThrow(()
+                -> new TeamNotFoundException("Tým nebyl nalezen"));
         return teamMapper.mapToTeamResponse(team);
     }
 
     @Override
     public TeamResponse updateTeam(Long id, TeamUpdateRequest teamUpdateRequest) {
-        Team teamToUpdate = teamRepository.findById(id).orElseThrow();
+        Team teamToUpdate = teamRepository.findById(id).orElseThrow(()
+                -> new TeamNotFoundException("Tým nebyl nalezen"));
         teamToUpdate.setName(teamUpdateRequest.getName());
         teamToUpdate.setAbbreviation(teamUpdateRequest.getAbbreviation());
         Team saved = teamRepository.save(teamToUpdate);
@@ -52,7 +55,8 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public void deleteTeam(Long id) {
-        Team team = teamRepository.findById(id).orElseThrow();
+        Team team = teamRepository.findById(id).orElseThrow(()
+                -> new TeamNotFoundException("Tým nebyl nalezen"));
         teamRepository.delete(team);
     }
 }
