@@ -16,7 +16,7 @@ public class PlayerResponse {
 
     private String email;
 
-    private Integer eloRating;
+    private Double eloRating;
 
     private LocalDate registeredAt;
 

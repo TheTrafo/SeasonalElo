@@ -1,5 +1,8 @@
 package org.training.service;
 
-public interface MatchService {
+import org.training.dto.match.MatchCreateRequest;
+import org.training.dto.match.MatchResponse;
 
+public interface MatchService {
+    MatchResponse createMatch(MatchCreateRequest matchCreateRequest);
 }

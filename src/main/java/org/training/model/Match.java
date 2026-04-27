@@ -45,13 +45,12 @@ public class Match {
         this.season = season;
     }
 
-    public Match(Player playerHome, Player playerAway, Long scoreHome, Long scoreAway, LocalDate playedAt, Season season) {
+    public Match(Player playerHome, Player playerAway, Long scoreHome, Long scoreAway, LocalDate playedAt) {
         this.playerHome = playerHome;
         this.playerAway = playerAway;
         this.scoreHome = scoreHome;
         this.scoreAway = scoreAway;
         this.playedAt = playedAt;
-        this.season = season;
     }
 
 }

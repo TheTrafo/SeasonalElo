@@ -5,7 +5,7 @@ import org.training.dto.player.PlayerResponse;
 import org.training.dto.playerTeamMembership.AddMemberRequest;
 import org.training.dto.playerTeamMembership.PlayerTeamResponse;
 import org.training.exception.PlayerAlreadyInTeamException;
-import org.training.exception.PlayerNotPartOfTeam;
+import org.training.exception.PlayerNotPartOfTeamException;
 import org.training.mapper.PlayerMapper;
 import org.training.mapper.PlayerTeamMapper;
 import org.training.model.Player;
@@ -60,7 +60,7 @@ public class PlayerTeamServiceImpl implements PlayerTeamService {
             playerTeamRepository.save(playerTeam);
             return playerTeamMapper.toPlayerTeamResponse(playerTeam);
         } else {
-            throw new PlayerNotPartOfTeam("Player was not in the selected team");
+            throw new PlayerNotPartOfTeamException("Player was not in the selected team");
         }
     }
 

@@ -26,13 +26,13 @@ public class Player {
     @Column(unique = true)
     private String email;
 
-    private Integer eloRating = 1000;
+    private Double eloRating = 1000.0;
 
     @CreationTimestamp
     @Setter(AccessLevel.NONE)
     private LocalDate registeredAt;
 
-    public Player(Long id, String username, String email, Integer eloRating, LocalDate registeredAt) {
+    public Player(Long id, String username, String email, Double eloRating, LocalDate registeredAt) {
         this.id = id;
         this.username = username;
         this.email = email;
