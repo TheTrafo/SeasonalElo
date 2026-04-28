@@ -18,5 +18,6 @@ public interface SeasonService {
 
     void deleteSeason(Long id);
 
+    SeasonResponse activateSeason(Long id);
 
 }

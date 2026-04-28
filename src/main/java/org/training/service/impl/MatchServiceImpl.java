@@ -7,7 +7,6 @@ import org.training.dto.match.MatchResponse;
 import org.training.enums.MatchResult;
 import org.training.exception.PlayerNotFoundException;
 import org.training.exception.SamePlayerException;
-import org.training.exception.SeasonNotActiveException;
 import org.training.mapper.MatchMapper;
 import org.training.model.Match;
 import org.training.model.Player;
@@ -16,6 +15,8 @@ import org.training.repository.MatchRepository;
 import org.training.repository.PlayerRepository;
 import org.training.repository.SeasonRepository;
 import org.training.service.MatchService;
+
+import java.util.List;
 
 @Service
 public class MatchServiceImpl implements MatchService {
@@ -42,8 +43,7 @@ public class MatchServiceImpl implements MatchService {
                 -> new PlayerNotFoundException("Hráč nebyl nalezen"));
         Player playerAway = playerRepository.findById(matchCreateRequest.getPlayerAwayId()).orElseThrow(()
                 -> new PlayerNotFoundException("Hráč nebyl nalezen"));
-        Season activeSeason = seasonRepository.findByActiveIsTrue().orElseThrow(()
-                -> new SeasonNotActiveException("Není aktivní sezóna"));
+        List<Season> activeSeason = seasonRepository.findByActiveIsTrue();
         Double playerHomeRating = playerHome.getEloRating();
         Double playerAwayRating = playerAway.getEloRating();
         Double calculatedHomeRating;
@@ -61,14 +61,14 @@ public class MatchServiceImpl implements MatchService {
             calculatedAwayRating = calculateRating(playerAwayRating, playerHomeRating, MatchResult.WIN);
         }
         Match match = matchMapper.mapToMatch(playerHome, playerAway, matchCreateRequest);
-        match.setSeason(activeSeason);
+        match.setSeason(activeSeason.get(0));
         playerHome.setEloRating(calculatedHomeRating);
         playerAway.setEloRating(calculatedAwayRating);
         Match saved = matchRepository.save(match);
         return matchMapper.mapToMatchResponse(saved);
     }
 
-    private Double calculateRating(Double playerRating, Double opponentRating, MatchResult result) {
+    private Double calculateRating(double playerRating, double opponentRating, MatchResult result) {
         // S_a = 1 (win), 0.5 (draw), 0 (loss)
         double likelihoodOfWin = 1.0 / (1.0 + Math.pow(10.0, (opponentRating - playerRating) / 400.0));
         double s = switch (result) {

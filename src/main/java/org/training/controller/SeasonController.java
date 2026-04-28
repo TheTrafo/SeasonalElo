@@ -48,4 +48,9 @@ public class SeasonController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/{id}/activate")
+    ResponseEntity<SeasonResponse> activateSeason(@PathVariable Long id){
+        return ResponseEntity.ok(seasonService.activateSeason(id));
+    }
+
 }

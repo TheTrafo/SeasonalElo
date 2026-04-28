@@ -20,6 +20,6 @@ public class LeaderboardController {
 
     @GetMapping
     ResponseEntity<LeaderboardResponse> getLeaderboard(@RequestParam Long seasonId){
-        return null;
+        return ResponseEntity.ok(leaderboardService.getLeaderboard(seasonId));
     }
 }
